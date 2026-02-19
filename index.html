@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Inconsciente">
+  <title>Inconsciente — Maca Cerquera</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Marcellus&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --postit-size: 88px;
+      --postit-font: 12px;
+      --postit-tape-w: 32px;
+      --postit-tape-h: 11px;
+    }
+    @media (min-width: 600px) {
+      :root { --postit-size: 100px; --postit-font: 13px; --postit-tape-w: 36px; --postit-tape-h: 12px; }
+    }
+    @media (min-width: 900px) {
+      :root { --postit-size: 110px; --postit-font: 14px; --postit-tape-w: 40px; --postit-tape-h: 14px; }
+    }
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%; height: 100%; overflow: hidden;
+      font-family: 'Marcellus', serif;
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none; -webkit-user-select: none;
+    }
+
+    /* --- LOADING --- */
+    #loading-screen {
+      position: fixed; inset: 0; z-index: 100; background: #fff;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.5s ease;
+    }
+    #loading-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+    #loading-screen span { font-family: 'Marcellus', serif; font-size: clamp(20px,5vw,28px); color: #2a2a2a; }
+
+    /* --- CODE SCREEN --- */
+    #code-screen {
+      z-index: 50; background: #fff;
+    }
+    #code-screen .wall-title { margin-bottom: clamp(6px,1vh,10px); }
+    .wall-subtitle {
+      font-family: 'Marcellus', serif; font-size: clamp(16px,3.5vw,20px);
+      color: #888; margin-bottom: clamp(12px,2vh,18px);
+      letter-spacing: 1px;
+    }
+    .install-desc {
+      font-family: 'Marcellus', serif; font-size: clamp(11px,2.2vw,14px);
+      color: #999; text-align: center; line-height: 1.6;
+      max-width: min(440px, 85vw); margin-bottom: clamp(20px,4vh,36px);
+      padding: 0 10px;
+    }
+    .install-desc em { font-style: italic; color: #aaa; }
+    #code-screen .wall-input-row { justify-content: center; }
+    #code-input {
+      flex: 1; min-width: 0; max-width: 220px;
+      font-family: 'Marcellus', serif; font-size: clamp(18px,4vw,22px);
+      color: #2a2a2a; background: transparent;
+      border: none; border-bottom: 1.5px solid #2a2a2a; outline: none;
+      padding: 6px 2px; text-align: center; text-transform: uppercase;
+      letter-spacing: 2px;
+      user-select: text; -webkit-user-select: text;
+      touch-action: manipulation;
+    }
+    #code-input::placeholder { color: #bbb; text-transform: none; letter-spacing: 0.5px; }
+    .code-error {
+      font-size: clamp(13px,2.5vw,15px); color: #e74c3c;
+      margin-top: 10px; min-height: 1.5em; text-align: center;
+    }
+
+    /* --- WALL --- */
+    #wall { position: fixed; inset: 0; z-index: 1; background: #fff; overflow: hidden; }
+
+    /* --- LANG PICKER --- */
+    #lang-picker {
+      position: fixed; z-index: 6;
+      top: clamp(12px,2vh,20px); right: clamp(12px,3vw,20px);
+      display: flex; gap: 6px;
+    }
+    .lang-btn {
+      font-family: 'Marcellus', serif; font-size: clamp(11px,2.2vw,13px);
+      color: #bbb; background: none; border: none;
+      cursor: pointer; padding: 4px 6px;
+      touch-action: manipulation; -webkit-tap-highlight-color: transparent;
+      letter-spacing: 0.5px; transition: color 0.2s;
+    }
+    .lang-btn.active { color: #2a2a2a; text-decoration: underline; text-underline-offset: 3px; }
+
+    /* --- WALL UI (title + input inline) --- */
+    #wall-ui {
+      position: fixed; z-index: 5; inset: 0;
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center;
+      padding: 0 20px;
+      pointer-events: none; transition: opacity 0.35s ease;
+    }
+    #wall-ui.hidden { opacity: 0; pointer-events: none; }
+    .wall-title {
+      font-size: clamp(28px,7vw,42px); color: #2a2a2a;
+      margin-bottom: clamp(12px,2vh,20px);
+      text-shadow: 0 1px 8px rgba(255,255,255,0.8);
+    }
+
+    /* Input row */
+    .wall-input-row {
+      display: flex; align-items: center; gap: 10px;
+      width: 100%; max-width: 420px;
+      margin-bottom: clamp(8px,1.5vh,14px);
+      pointer-events: auto;
+    }
+    #question-input {
+      flex: 1; min-width: 0;
+      font-family: 'Marcellus', serif; font-size: clamp(16px,3.5vw,20px);
+      color: #2a2a2a; background: transparent;
+      border: none; border-bottom: 1.5px solid #2a2a2a; outline: none;
+      padding: 6px 2px;
+      user-select: text; -webkit-user-select: text;
+      touch-action: manipulation;
+    }
+    #question-input::placeholder { color: #bbb; }
+    #submit-btn, #code-submit-btn {
+      font-family: 'Marcellus', serif; font-size: clamp(18px,4vw,22px);
+      color: #2a2a2a; background: none; border: 2px solid #2a2a2a;
+      border-radius: 50%; width: clamp(40px,8vw,48px); height: clamp(40px,8vw,48px);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0; line-height: 1;
+    }
+    #submit-btn:active, #code-submit-btn:active { transform: scale(0.92); }
+
+    .wall-counter {
+      font-size: clamp(12px,2.5vw,15px); color: #bbb;
+      pointer-events: none;
+    }
+
+    /* --- WALL POST-IT --- */
+    .postit {
+      position: absolute;
+      width: var(--postit-size); height: var(--postit-size);
+      padding: 18px 6px 6px 6px;
+      font-family: 'Caveat', cursive; font-size: var(--postit-font);
+      line-height: 1.2; color: #2a2a2a;
+      overflow: hidden; word-wrap: break-word;
+      box-shadow: 1px 2px 6px rgba(0,0,0,0.18);
+      contain: layout style;
+    }
+    .postit::before {
+      content: ''; position: absolute; top: -2px; left: 50%;
+      transform: translateX(-50%);
+      width: var(--postit-tape-w); height: var(--postit-tape-h);
+      background: rgba(255,255,255,0.5); border-radius: 1px;
+    }
+    .postit::after {
+      content: ''; position: absolute; bottom: 0; right: 0;
+      width: 16px; height: 16px;
+      background: linear-gradient(225deg, rgba(0,0,0,0.06) 0%, rgba(0,0,0,0.02) 40%, transparent 60%);
+    }
+    .postit.fly-in { animation: flyIn 0.65s ease-out forwards; }
+    .postit.dragging {
+      z-index: 50; box-shadow: 3px 6px 20px rgba(0,0,0,0.3);
+      transform: scale(1.08) rotate(0deg) !important;
+      transition: box-shadow 0.2s ease;
+    }
+
+    #placement-hint {
+      position: fixed; z-index: 55;
+      top: clamp(20px,4vh,40px); left: 0; right: 0;
+      text-align: center; font-size: clamp(16px,3.5vw,20px);
+      color: #555; pointer-events: none;
+      transition: opacity 0.35s ease;
+      text-shadow: 0 1px 8px rgba(255,255,255,0.9);
+    }
+    #placement-hint.hidden { opacity: 0; }
+
+    /* --- REVEAL SCREEN --- */
+    .screen {
+      position: fixed; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      transition: opacity 0.35s ease, visibility 0.35s ease;
+    }
+    .screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+
+    #reveal-screen { z-index: 30; background: rgba(0,0,0,0.72); padding: 20px; }
+    .reveal-wrapper {
+      display: flex; flex-direction: column; align-items: center;
+      gap: clamp(16px,3vh,24px); max-width: 100%;
+    }
+    .reveal-question {
+      font-size: clamp(15px,3.5vw,18px);
+      color: rgba(255,255,255,0.75); font-style: italic;
+      max-width: min(340px,80vw); text-align: center;
+    }
+    .reveal-postit {
+      width: min(260px,65vw); height: min(260px,65vw);
+      padding: clamp(20px,5vw,32px) clamp(12px,3vw,18px) clamp(12px,3vw,18px) clamp(12px,3vw,18px);
+      font-family: 'Caveat', cursive; font-size: clamp(17px,4vw,22px);
+      line-height: 1.3; color: #2a2a2a;
+      display: flex; align-items: center; justify-content: center;
+      text-align: center; word-wrap: break-word;
+      box-shadow: 2px 4px 16px rgba(0,0,0,0.3); position: relative;
+    }
+    .reveal-postit::before {
+      content: ''; position: absolute; top: -3px; left: 50%;
+      transform: translateX(-50%);
+      width: clamp(40px,10vw,56px); height: clamp(14px,3vw,18px);
+      background: rgba(255,255,255,0.45); border-radius: 1px;
+    }
+    .reveal-postit::after {
+      content: ''; position: absolute; bottom: 0; right: 0;
+      width: 24px; height: 24px;
+      background: linear-gradient(225deg, rgba(0,0,0,0.06) 0%, rgba(0,0,0,0.02) 40%, transparent 60%);
+    }
+    .reveal-postit.pop { animation: revealPop 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+    .btn {
+      font-family: 'Marcellus', serif; font-size: clamp(18px,4vw,22px);
+      color: #fff; background: transparent;
+      border: 2px solid rgba(255,255,255,0.6); border-radius: 12px;
+      padding: clamp(10px,2vw,12px) clamp(24px,6vw,36px);
+      cursor: pointer; touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn:active { transform: scale(0.96); }
+
+    /* --- READ-ONLY BANNER --- */
+    .readonly-banner {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+      text-align: center; padding: 10px 20px;
+      font-family: 'Marcellus', serif; font-size: clamp(14px,3vw,18px);
+      color: #fff; background: rgba(0,0,0,0.7);
+      pointer-events: none;
+    }
+    .readonly-banner.hidden { display: none; }
+
+    /* --- ADMIN BUTTON --- */
+    .admin-btn {
+      position: fixed; bottom: 20px; right: 20px; z-index: 10;
+      font-family: 'Marcellus', serif; font-size: 12px;
+      color: #999; background: rgba(255,255,255,0.85);
+      border: 1px solid #ccc; border-radius: 6px;
+      padding: 6px 14px; cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .admin-btn:active { transform: scale(0.95); }
+    .admin-btn.hidden { display: none; }
+
+    /* --- ANIMATIONS --- */
+    @keyframes flyIn {
+      0%   { transform: translateY(-110vh) rotate(0deg); opacity: 0; }
+      10%  { opacity: 1; }
+      55%  { transform: translateY(12px) rotate(var(--rot,0deg)); }
+      100% { transform: translateY(0) rotate(var(--rot,0deg)); }
+    }
+    @keyframes revealPop {
+      0%   { transform: scale(0.15) rotate(-12deg); opacity: 0; }
+      50%  { transform: scale(1.08) rotate(1deg); opacity: 1; }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="code-screen" class="screen hidden">
+    <div class="wall-title">Inconsciente</div>
+    <div class="wall-subtitle">Maca Cerquera</div>
+    <div class="install-desc">
+      Intervention con escritura en post-its · Medidas variables · Work in progress since 2012<br>
+      <em>This project is based on thoughts and desires that I express from within.
+      Playing with the emotions and desires that sometimes no one dares to say.
+      I like to imagine the journey that these phrases make in others, generating an inevitable complicity.</em>
+    </div>
+    <div class="wall-input-row">
+      <input type="text" id="code-input" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false">
+      <button id="code-submit-btn">&rarr;</button>
+    </div>
+    <div class="code-error" id="code-error"></div>
+  </div>
+
+  <div id="wall"></div>
+
+  <div id="lang-picker">
+    <button class="lang-btn active" data-lang="it">IT</button>
+    <button class="lang-btn" data-lang="en">EN</button>
+    <button class="lang-btn" data-lang="es">ES</button>
+  </div>
+
+  <div id="wall-ui" class="hidden">
+    <div class="wall-title">Inconsciente</div>
+    <div class="wall-input-row">
+      <input type="text" id="question-input" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      <button id="submit-btn">&rarr;</button>
+    </div>
+    <div class="wall-counter" id="counter"></div>
+  </div>
+
+  <div id="placement-hint" class="hidden"></div>
+
+  <div id="reveal-screen" class="screen hidden">
+    <div class="reveal-wrapper" id="reveal-wrapper">
+      <div class="reveal-question" id="reveal-question"></div>
+      <div class="reveal-postit" id="reveal-postit"></div>
+      <button class="btn" id="paste-btn"></button>
+    </div>
+  </div>
+
+  <div id="readonly-banner" class="readonly-banner hidden"></div>
+  <button id="admin-close-btn" class="admin-btn hidden"></button>
+
+  <div id="loading-screen">
+    <span id="t-loading"></span>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // =============================================
+  // SUPABASE CONFIG — replace with your project values
+  // =============================================
+  var SUPABASE_URL = 'https://audcqtzdrxlkawujvanl.supabase.co';
+  var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF1ZGNxdHpkcnhsa2F3dWp2YW5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzMTQ1NTMsImV4cCI6MjA4Njg5MDU1M30.NSrcBkohczfaX3xlYlLXXxI6K7tkPLpW87B1ne3xH-w';
+  var sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  // --- i18n ---
+  var I18N = {
+    it: {
+      placeholder: 'parlami...',
+      counter: '{n} post-it sul muro',
+      hint: 'Trascina il post-it dove vuoi',
+      pasteBtn: 'incolla sul muro \u2192',
+      loading: 'Inconsciente...',
+      codePlaceholder: 'codice di accesso',
+      codeError: 'Codice non valido',
+      wallClosed: 'Questo muro \u00e8 stato chiuso',
+      closeWall: 'Chiudi Muro',
+      closeConfirm: 'Sei sicuro di voler chiudere il muro? Verr\u00e0 scaricato uno screenshot.'
+    },
+    en: {
+      placeholder: 'tell me...',
+      counter: '{n} post-its on the wall',
+      hint: 'Drag the post-it where you want',
+      pasteBtn: 'stick to the wall \u2192',
+      loading: 'Inconsciente...',
+      codePlaceholder: 'access code',
+      codeError: 'Invalid code',
+      wallClosed: 'This wall has been closed',
+      closeWall: 'Close Wall',
+      closeConfirm: 'Are you sure you want to close the wall? A screenshot will be downloaded.'
+    },
+    es: {
+      placeholder: 'h\u00e1blame...',
+      counter: '{n} post-it en el muro',
+      hint: 'Arrastra el post-it donde quieras',
+      pasteBtn: 'pega en el muro \u2192',
+      loading: 'Inconsciente...',
+      codePlaceholder: 'c\u00f3digo de acceso',
+      codeError: 'C\u00f3digo no v\u00e1lido',
+      wallClosed: 'Este muro ha sido cerrado',
+      closeWall: 'Cerrar Muro',
+      closeConfirm: '\u00bfEst\u00e1s seguro de que quieres cerrar el muro? Se descargar\u00e1 una captura.'
+    }
+  };
+
+  var currentLang = 'it';
+  function t(key) { return I18N[currentLang][key] || I18N.it[key] || key; }
+
+  function applyLang() {
+    document.getElementById('question-input').placeholder = t('placeholder');
+    document.getElementById('code-input').placeholder = t('codePlaceholder');
+    document.getElementById('placement-hint').textContent = t('hint');
+    document.getElementById('paste-btn').textContent = t('pasteBtn');
+    document.getElementById('t-loading').textContent = t('loading');
+    document.getElementById('admin-close-btn').textContent = t('closeWall');
+    updateCounter();
+    var btns = document.querySelectorAll('.lang-btn');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle('active', btns[i].dataset.lang === currentLang);
+    }
+    document.documentElement.lang = currentLang;
+  }
+
+  function setLang(lang) {
+    if (!I18N[lang]) return;
+    currentLang = lang;
+    try { localStorage.setItem('oracolo_lang', lang); } catch(e) {}
+    applyLang();
+  }
+
+  // --- PHRASES ---
+  var FRASI = [
+    'A dick has no brain',
+    'Kiss me',
+    'Eternity is now',
+    'Everything es una ilusión',
+    'I cry',
+    'Love and mortality',
+    'Una lágrima puede todo',
+    'Te regalo todas mis lágrimas',
+    'Soy una víctima del amor',
+    'Vos siempre en vos',
+    'Tears of love',
+    'I love this song',
+    'I\'ll give you all my dreams',
+    'I miss crying',
+    'I wanna fly with you',
+    'My heart is in pain',
+    'I wanna cry forever',
+    'Bebita salvaje',
+    'Find me here',
+    'Are you cumin?',
+    'Why are you crying?',
+    'Soy tu reina',
+    'This is the end',
+    'A veces te sueño',
+    'I miss your smell',
+    'Love like a popper dance and cry',
+    'Seamos infinitos otra vez',
+    'Te vi mirarme',
+    'Nunca dejes de buscarme',
+    'Contémonos la vida',
+    'Amor somos nosotros',
+    'A veces no quiero ser feliz',
+    'Tú en mis desayunos',
+    'I like sleeping with you',
+    'You\'re not my world',
+    'Quiero todo contigo',
+    'Intentar olvidar',
+    'Nuestras noches infinitas',
+    'Sos todas las montañas desde mi balcón',
+    'I want you to show me your dream',
+    'Olvidarnos para nunca despedirnos',
+    'Tenemos un cielo en los pies',
+    'You found me',
+    'I like waiting for you',
+    'I love what we do',
+    'Forget me please',
+    'Quiero ir a la Antártida with you',
+    'Me duele la noche sin ta novie',
+    'Let\'s hate the world juntitos',
+    'Moriría contigo',
+    'Paz amor y euros',
+    'Que vuelvan nuestros sábados',
+    'Abrazos infinitos me das tu',
+    'No quiero verte conmigo',
+    'El olor de tu ausencia',
+    'Nos creía invencibles',
+    'Somos la nada y el vacío',
+    'Siempre pienso en ti',
+    'No puedo soñarte',
+    'You could be my favorite new year',
+    'Me gusta ser feliz sin ti',
+    'Spring is here',
+    'Me gusta esta vida',
+    'Me suenas en tu cama',
+    'Llévame a tu nube',
+    'Extraño tu desorden en mi',
+    'Sos mi feriado favorito',
+    'Dónde estás?',
+    'Quiero mañanas eternas',
+    'Hacer nada juntos',
+    'Hablar en silencio',
+    'Te olvidaré',
+    'Olvidé todo mi amor',
+    'Hicimos todo',
+    'Volver a nacer',
+    'Elijo lo que quiero ser',
+    'Me gusta estar sola',
+    'Quedándote o yéndote',
+    'Mis domingos te extrañan',
+    '...y si te espero en Roma?',
+    'I love you forever',
+    'Juguemos para no desaparecer',
+    'Está bien no estar bien',
+    'Vivimos dentro de un sueño',
+    'Soñar contigo la vida',
+    'Lembro de você',
+    'Estoy cerca',
+    'Fuck nudes cook me ceviche',
+    'Mucho sexo gay',
+    'Stop it',
+    'Sad people ruling the world',
+    'Sorry about our president',
+    'Nómade de corazón',
+    'Wish you were gay',
+    'Mis tetas son icónicas',
+    'Me gusta ver el mar contigo',
+    'De amor no se vive',
+    'Dejamos de soñarnos',
+    'Te perdí cuando te conocí',
+    'Me gusta caminar con vos',
+    'Our love still remains',
+    'Siempre es una cuestión de piel',
+    'Despiértame cuando estés a mi lado',
+    'Contigo soy feliz',
+    'Te esperaría toda la vida',
+    'Sueña conmigo',
+    'No somos perfectos',
+    'Contigo siempre es real',
+    'Tú y yo el planeta',
+    'Yo no creo en el amor',
+    'Yo creo en nosotros',
+    'Bailemos solos',
+    'Estar vivo es un peligro',
+    'No lloro más',
+    'El cuerpo se me desangra',
+    'No me gustan las despedidas',
+    'La felicidad también está en otras camas',
+    'No vuelvas más',
+    'Nada es para siempre',
+    'Tú y yo somos carne',
+    'Siempre estamos en ningún lugar',
+    'Love me',
+    'I don\'t need another hero',
+    'Hoy voy a detener el tiempo',
+    'Todos queremos ser una Rosa',
+    'Abrazos eternos',
+    'Como me mirabas es mi tatuaje favorito',
+    'Promete que siempre volverás',
+    'Jamás me iré',
+    'Picnics eternos',
+    'Ya no siento nada',
+    'También soy nada',
+    'Quédate conmigo',
+    'No me robes los sueños',
+    'Sigo dormida',
+    'Sigo viviendo sin tu amor',
+    'I have a great love',
+    'Se me perdió tu mundo feliz',
+    'No quiero tenerte',
+    'Olvídame',
+    'Tengo que dar más',
+    'Regreso siempre',
+    'Mi corazón te vomita',
+    'Quiero que aparezcas',
+    'Dónde está tu cama?',
+    'Intentar ser feliz',
+    'Hay algo en el viento',
+    'Éramos felices',
+    'Éramos eternos',
+    'Siento amor',
+    'Todo es más lento',
+    'El amor te ciega todo',
+    'Yo no sirvo para amar',
+    'Saudade',
+    'Sobrevivo',
+    'I miss you',
+    'Todos somos iguales',
+    'No me quieran',
+    'No me extrañen',
+    'No me piensen',
+    'No soy de aquí',
+    'Me gusta el amor',
+    'Sueño en otro idioma',
+    'Tengo una tormenta en el cuerpo',
+    'Quiero dormirnos',
+    'Volvió el amor',
+    'Respiro mal',
+    'Creo en el silencio',
+    'No hay vuelta atrás',
+    'Vuelo sin pensar',
+    'Me pesan los ojos',
+    'Olvido todos mis sueños',
+    'Algún día seremos felices',
+    'No quiero ser famosa',
+    'No quiero trabajar',
+    'Tears in my face',
+    'I miss our home',
+    'You\'re my favorite spot',
+    'I don\'t want kids i want tattoos',
+    'Let\'s daydream together',
+    'You\'re my favorite mood',
+    'Estamos hartas',
+    'Se nos rompió el amor',
+    'I wanna be innocent again',
+    'Todo se pierde',
+    'I wish i could disappear',
+    'You are good to me',
+    'This is for us',
+    'I\'m tired of waiting',
+    'I\'m tired of staying awake',
+    'I love you more than before',
+    'Todo es una ilusión',
+    'Dream on my tits',
+    'Extra cama con vos',
+    'No me mires',
+    'Flasheame',
+    'I think you have something for me',
+    'You are my mango',
+    'Berries son mis drogas',
+    'Tears with coffee',
+    'Ya fue el arte',
+    'Me gusta verte',
+    'No duermo del lado del corazón',
+    'Todes les amores',
+    'Yo soy el futuro',
+    'Todo cambia',
+    'No pienso',
+    'No somos nada',
+    'No somos nadie',
+    'Soy feliz',
+    'Me gusta el error',
+    'Somos soledad',
+    'Se busca mecenas',
+    'Extraño extrañarte',
+    'You have a great future',
+    'Make me squirt',
+    'I wanna squirt you',
+    'Art makes us more human',
+    'I changed my life',
+    'You were the love of my life',
+    'I hope you dance',
+    'Self care all the time everyday',
+    'Tu eres mi omega - Ω - ohm',
+    'No quiero un amor sin ternura',
+    'The sky in my heart',
+    'Bitch, i know you know',
+    'I smell you on my skin',
+    'I breathe you',
+    'I wait for you',
+    'I see you',
+    'Quiero revolución',
+    'I love every time with you',
+    'I hope we laugh a lot together',
+    'I\'m not sad i\'m very disappointed everyday',
+    'When is mañana?',
+    'Rancia y mamada',
+    'I have nothing to say to anyone',
+    'No existe un mundo para los dos',
+    'Tengamos una siesta eterna',
+    'Los sueños no son eternos',
+    'Me gustaría bailarte',
+    'No quiero corazones virtuales',
+    'Volems esta noche',
+    'Murió la flor',
+    'Todos mienten',
+    'No estamos solos',
+    'Ven por mí',
+    'No me censures',
+    'Je suis tarde',
+    'Nada es necesario',
+    'Todo se parece',
+    'Todos vuelven siempre',
+    'Quiero ir con vos',
+    'Llévame lejos',
+    'Let everything happen to you',
+    'No feeling is final',
+    'I love myself',
+    'Siempre te esperé',
+    'Llévame a Plutón',
+    'Vacation forever',
+    'I don\'t remember my name',
+    'No me tomes en serio',
+    'Las cosas me pierden',
+    'El corazón es una piedra',
+    'Afecto efecto',
+    'Mi cuerpo es una tumba',
+    'Tengo falsos recuerdos',
+    'Live life and don\'t let life live you',
+    'Happy tears happy tits',
+    'Let\'s keep finding ourselves',
+    'It takes time to be',
+    'I just wanna wake up with you',
+    'Let\'s screw it up',
+    'Te extraño mi amor',
+    'Yo me voy contigo a matar',
+    'Quiero hacer todo',
+    'Keep calm',
+    'Meet me half way',
+    'Deseo desear',
+    'Nostalgia futura',
+    'Ya estás volviendo?',
+    'Fiesta y desamor',
+    'Nuestro amor es plástico',
+    'Extraño la noche',
+    'Me quedo contigo',
+    'Bailemos',
+    'Nos están alejando',
+    'Estamos juntos',
+    'Volveremos',
+    'Nos quieren callar',
+    'Déjame tu recuerdo',
+    'Siempre tú',
+    'La eternidad es ahora',
+    'Sin plata no puedo pensar',
+    'También somos lo que hemos perdido',
+    'Sbored',
+    'Destroy time',
+    'We are made of dreams',
+    'Te amo aunque no te bañes',
+    'No me baño',
+    'Se murió la tristeza',
+    'El infinito está en vos',
+    'I don\'t feel it like you see it',
+    'Aquí está el mar',
+    'Eres un amor irracional',
+    'Vendo mi ego',
+    'Tell her you love her dick',
+    'No estamos rotos',
+    'There is always hope',
+    'Your heart\'s between the mountains',
+    'Everything between us is amazing',
+    'Dame un vinito tonight',
+    'I want to be ok already',
+    'I just want to enjoy life',
+    'Work and don\'t post',
+    'Todo o nada',
+    'Eventually everything connects',
+    'Freakin tired',
+    'Queer as fuck',
+    'I can\'t stop scrolling',
+    'Sorry i don\'t speak hetero',
+    'Flowers and clona',
+    'Be glücklich',
+    'Mi casa eres tú',
+    'Sometimes i think and sit',
+    'I don\'t suffer for love anymore',
+    'Always got your back',
+    'Don\'t walk away',
+    'Let\'s be people',
+    'I think I\'m ok because I\'m alive',
+    'Yo soy el universo',
+    'Just do it',
+    'Feelings are facts',
+    'My love language is being weird',
+    'Nadie es hetero',
+    'Punk y anarquista',
+    'I\'m too tired',
+    'I love to get messy with you',
+    'Sad girl since 5',
+    'There\'s a fire in our hearts',
+    'Yo te voy a cuidar',
+    'Keep working',
+    'Contact doesn\'t mean connection',
+    'You are here but i miss you',
+    'Quiero boludear con vos',
+    'Make me love',
+    'Where we are?',
+    'Where is love?',
+    'Soy un sol',
+    'Quiero vomitar',
+    'No me interesa',
+    'Te regalo mi corazón',
+    'Nunca es tarde',
+    'Prohibido olvidar',
+    'Vámonos de aquí',
+    'El desamor nos va a matar',
+    'No te llores',
+    'Can we fall in love this spring?',
+    'También estoy aquí',
+    'No quiero perderte',
+    'Quiero perderme contigo',
+    'Ven conmigo siempre',
+    'Nos extraño',
+    'Esto no se vende',
+    'Nos quiero a nosotros',
+    'Seamos infinitos',
+    'Me cansé de soñarte',
+    'Mi corazón duele',
+    'Dame fantasía',
+    'Quiero ser tu vicio',
+    'El futuro es ahora',
+    'Seamos fugaces',
+    'Me rompí el corazón',
+    'Prefiero no saber',
+    'Yo también quiero',
+    'Camíname por todo el cuerpo',
+    'Un cuartito para los dos',
+    'Ya existe todo',
+    'Salvémonos solos',
+    'Te quiero seguir',
+    'Quiero oler como vos',
+    'Me olvidaste de nuevo',
+    'Me haces llorar',
+    'Quiero acordar contigo',
+    'Te encontré',
+    'Quiero volver',
+    'Vuela conmigo',
+    'Terminemos mal',
+    'No me esperes',
+    'Soñé que era verano',
+    'Termino mirándote',
+    'Soy tu carne',
+    'No siento tu piel',
+    'Somos un amor infinito',
+    'Soy tu chica',
+    'Me gusta esperarte',
+    'El invierno no sé',
+    'No me llores',
+    'Ya no quiero jugar',
+    'Prefiero hablar sola',
+    'Lo vimos todo',
+    'Regálame tu horizonte',
+    'Sácame la piel',
+    'Olvidémonos siempre',
+    'Quédate conmigo',
+    'Déjame buscarte',
+    'Hoy voy a hacer algo',
+    'Me tienes?',
+    'Esto está de más',
+    'No me dejes regresar',
+    'Es mejor que no exista',
+    'Soñé que te quería',
+    'No soy una extraña',
+    'Tu piel está muda',
+    'Yo no fui',
+    'Bésame mucho',
+    'Regresa siempre',
+    'No me putees',
+    'No me rompas',
+    'Quiero querer',
+    'No me olvides',
+    'No me ames',
+    'Mañana no existe',
+    'Después es nunca',
+    'Déjame decirte algo',
+    'Dame más',
+    'Seamos amantes eternos',
+    'Esto no me sirve más',
+    'Un día voy a llorar',
+    'No quiero más amores de verano',
+    'Quiero tu eternidad',
+    'Quiero ser tu secreto',
+    'No quiero bailarte',
+    'Cruzo el mar para verte',
+    'Quiero ser un meme',
+    'Yo vi tu corazón',
+    'Fica mais perto',
+    'Llueve en mí',
+    'Léeme todo',
+    'Busquémonos otra vez',
+    'Dame todo',
+    'Siempre estás conmigo',
+    'Quédate esta noche',
+    'Internet is my lover',
+    'Estamos perdidos',
+    'Perdura conmigo',
+    'Renunciemos todos',
+    'Bailemos solos',
+    'Aquí te espero siempre',
+    'Búscame',
+    'Siempre nos imagino bailando',
+    'Stalkéame',
+    'Hagamos magia',
+    'Devuélveme el corazón',
+    'No quiero ser alguien',
+    'Quiero ser una rosa',
+    'Quítame todo',
+    'Me invades',
+    'Hagamos nada',
+    'Me mataste',
+    'Siempre quiero nada',
+    'No sé olvidar',
+    'Otro amor vendrá',
+    'Quiero regresar',
+    'Seamos felices',
+    'Llévame a donde quieras',
+    'Pruébame',
+    'No soy un robot',
+    'Never stop',
+    'No soy nada',
+    'Volvámonos nada',
+    'Actualízame',
+    'No existimos',
+    'Mi noche es tu mañana',
+    'Sacas lo peor de mí',
+    'Espero que no vengas',
+    'Llegaste tarde',
+    'Te maté',
+    'No existe la noche',
+    'Lloro por vos',
+    'Empecemos pero no paremos',
+    'Te vomité',
+    'Me gustan todos',
+    'Te quiero conmigo',
+    'Solo tú',
+    'Traté de caminarte',
+    'No quise borrarte',
+    'Hagámoslo rápido',
+    'No quiero tu amor',
+    'Quiero más novios',
+    'Caminemos desnudos',
+    'Soñé que te soñaba',
+    'Sobredosis de amor efímero',
+    'No quiero más historias',
+    'Colecciono olvidos',
+    'Suicídame',
+    'Solo quiero mirar',
+    'Me escondo en ti',
+    'Tocarte es una ilusión',
+    'Cánsame',
+    'Olvido tu ausencia',
+    'No hables de ti',
+    'También quiero gritar',
+    'Esta vez prometo llorar',
+    'Un ratito más',
+    'Te veo como nunca te vi',
+    'Olvidé soñar',
+    'Siempre alguien te mira',
+    'Salí a buscarte',
+    'No me canso de tu voz',
+    'Te quiero chapar',
+    'Sos mi sueño',
+    'Somos una prueba de amor',
+    'El amor vende',
+    'Don\'t forget me',
+    'Quiero estar calata',
+    'Let\'s try to live forever',
+    'Siempre al mar',
+    'Siempre amar',
+    'You make me dizzy',
+    'Las lenguas se abrazan',
+    'I want more',
+    'Unfuck the world',
+    'Amor sin límite',
+    'I think i love u',
+    'Do what u love',
+    'Vos sos las estrellas',
+    'The future is ladyboy',
+    'Go deep',
+    'Keep doing what you\'re doing',
+    'Todo se cae',
+    'Everything is alive',
+    'I make my dreams come true',
+    'El miedo va a cambiar de mando',
+    'Work hard play harder',
+    'Don\'t wait',
+    'You are my portal',
+    'Yo también soy el mar',
+    'Let\'s end the world together',
+    'We are the nightlife',
+    'Out of the blue',
+    'Later is better',
+    'Be delight',
+    'Te llevo en la piel',
+    'You\'re my fantasy come true',
+    'I\'ll drink my love',
+    'Te doy mi vida'
+  ];
+
+  var COLORS = [
+    '#FFE234','#FFD600','#FF6FB7','#FF4D6D',
+    '#FF8C42','#FFA552','#7ED957','#4CAF50',
+    '#56CFE1','#4361EE','#9B5DE5','#C77DFF',
+    '#F72585','#00B4D8'
+  ];
+
+  var INACTIVITY_MS = 35000;
+
+  // --- STATE ---
+  var state = {
+    screen: 'code', postits: [], usedPhrases: [],
+    currentPhrase: null, currentQuestion: null, currentColor: null,
+    inactivityTimer: null, _placingNew: false, _newEl: null
+  };
+
+  // --- MULTI-USER STATE ---
+  var wallId = null;
+  var wallActive = false;
+  var adminSecret = null;
+  var myPendingIds = {};   // post-it IDs we inserted — skip realtime INSERT echo
+  var draggingId = null;   // post-it ID currently being dragged locally
+
+  // --- DRAG THROTTLE ---
+  var dragThrottle = { lastTime: 0, pending: null };
+
+  // --- DOM ---
+  var $wall = document.getElementById('wall');
+  var $wallUI = document.getElementById('wall-ui');
+  var $reveal = document.getElementById('reveal-screen');
+  var $loading = document.getElementById('loading-screen');
+  var $counter = document.getElementById('counter');
+  var $questionInput = document.getElementById('question-input');
+  var $revealQuestion = document.getElementById('reveal-question');
+  var $revealPostit = document.getElementById('reveal-postit');
+  var $revealWrapper = document.getElementById('reveal-wrapper');
+  var $placementHint = document.getElementById('placement-hint');
+  var $codeScreen = document.getElementById('code-screen');
+  var $codeInput = document.getElementById('code-input');
+  var $codeError = document.getElementById('code-error');
+  var $readonlyBanner = document.getElementById('readonly-banner');
+  var $adminCloseBtn = document.getElementById('admin-close-btn');
+  var $langPicker = document.getElementById('lang-picker');
+
+  function wallW() { return window.innerWidth; }
+  function wallH() { return window.innerHeight; }
+  function postitSize() {
+    return parseInt(getComputedStyle(document.documentElement).getPropertyValue('--postit-size'),10) || 90;
+  }
+
+  // --- LOCAL STORAGE (per-device prefs only) ---
+  function loadLocalPrefs() {
+    try {
+      var u = localStorage.getItem('oracolo_usedPhrases');
+      if (u) state.usedPhrases = JSON.parse(u);
+      var l = localStorage.getItem('oracolo_lang');
+      if (l && I18N[l]) currentLang = l;
+    } catch (e) { state.usedPhrases = []; }
+  }
+  function saveUsedPhrases() { try { localStorage.setItem('oracolo_usedPhrases', JSON.stringify(state.usedPhrases)); } catch(e) {} }
+
+  // --- PHRASES ---
+  function selectPhrase() {
+    if (state.usedPhrases.length >= FRASI.length) state.usedPhrases = [];
+    var available = [];
+    for (var i = 0; i < FRASI.length; i++) {
+      if (state.usedPhrases.indexOf(i) === -1) available.push(i);
+    }
+    var idx = available[Math.floor(Math.random() * available.length)];
+    state.usedPhrases.push(idx);
+    saveUsedPhrases();
+    return FRASI[idx];
+  }
+  function randomColor() { return COLORS[Math.floor(Math.random() * COLORS.length)]; }
+  function generateRotation() { return -4 + Math.random() * 8; }
+
+  // =============================================
+  // SUPABASE — validate code, load wall, subscribe
+  // =============================================
+  async function validateCode(code) {
+    var res = await sb.from('walls').select('*').eq('code', code.toUpperCase()).single();
+    if (res.error || !res.data) return null;
+    return res.data;
+  }
+
+  async function enterWall(wall) {
+    wallId = wall.id;
+    wallActive = wall.is_active;
+
+    // Fetch existing post-its
+    var res = await sb.from('postits')
+      .select('*')
+      .eq('wall_id', wallId)
+      .order('created_at', { ascending: true });
+
+    if (!res.error && res.data) {
+      state.postits = res.data;
+    }
+
+    renderWall();
+    $codeScreen.classList.add('hidden');
+
+    if (wallActive) {
+      showScreen('wall');
+      subscribeRealtime();
+      if (adminSecret) showAdminButton();
+    } else {
+      showScreen('wall');
+      enterReadOnlyMode();
+    }
+  }
+
+  // --- REALTIME ---
+  function subscribeRealtime() {
+    sb.channel('wall-' + wallId)
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'postits',
+        filter: 'wall_id=eq.' + wallId
+      }, handleRealtimeInsert)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'postits',
+        filter: 'wall_id=eq.' + wallId
+      }, handleRealtimeUpdate)
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'walls',
+        filter: 'id=eq.' + wallId
+      }, handleWallUpdate)
+      .subscribe();
+  }
+
+  function handleRealtimeInsert(payload) {
+    var data = payload.new;
+    if (!data) return;
+    // Skip our own optimistic inserts
+    if (myPendingIds[data.id]) {
+      delete myPendingIds[data.id];
+      return;
+    }
+    // Add to local state and render with animation
+    state.postits.push(data);
+    var el = createPostitElement(data, true);
+    $wall.appendChild(el);
+    updateCounter();
+  }
+
+  function handleRealtimeUpdate(payload) {
+    var data = payload.new;
+    if (!data) return;
+    // Skip if we're currently dragging this post-it
+    if (data.id === draggingId) return;
+    // Smooth transition to new position
+    var el = $wall.querySelector('[data-id="' + data.id + '"]');
+    if (el) {
+      el.style.transition = 'left 0.3s ease, top 0.3s ease';
+      el.style.left = (data.x * 100) + '%';
+      el.style.top = (data.y * 100) + '%';
+      setTimeout(function() { el.style.transition = ''; }, 350);
+    }
+    // Update local state
+    var pd = findPostitData(data.id);
+    if (pd) { pd.x = data.x; pd.y = data.y; }
+  }
+
+  function handleWallUpdate(payload) {
+    var data = payload.new;
+    if (data && data.is_active === false && wallActive) {
+      enterReadOnlyMode();
+    }
+  }
+
+  // --- READ-ONLY MODE ---
+  function enterReadOnlyMode() {
+    wallActive = false;
+    $wallUI.classList.add('hidden');
+    $readonlyBanner.textContent = t('wallClosed');
+    $readonlyBanner.classList.remove('hidden');
+    $adminCloseBtn.classList.add('hidden');
+
+    // Cancel active drag
+    if (drag.active && drag.el) {
+      drag.el.classList.remove('dragging');
+      drag.active = false; drag.el = null;
+    }
+    // Cancel placement mode
+    if (state._placingNew && state._newEl) {
+      state._newEl.remove();
+      state._placingNew = false; state._newEl = null;
+    }
+    $placementHint.classList.add('hidden');
+
+    // Return to wall screen if on reveal
+    if (state.screen === 'reveal') showScreen('wall');
+  }
+
+  // --- ADMIN ---
+  function showAdminButton() {
+    $adminCloseBtn.textContent = t('closeWall');
+    $adminCloseBtn.classList.remove('hidden');
+  }
+
+  async function closeWall() {
+    if (!confirm(t('closeConfirm'))) return;
+
+    // Hide UI before screenshot
+    $wallUI.classList.add('hidden');
+    $langPicker.style.display = 'none';
+    $adminCloseBtn.style.display = 'none';
+    $readonlyBanner.classList.add('hidden');
+
+    // Small delay for DOM to settle
+    await new Promise(function(r) { setTimeout(r, 100); });
+
+    // Take screenshot
+    try {
+      var canvas = await html2canvas($wall, { scale: 2, backgroundColor: '#ffffff' });
+      var link = document.createElement('a');
+      link.download = 'oracolo-maca-wall.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    } catch (e) {
+      console.error('Screenshot error:', e);
+    }
+
+    // Restore visibility (will be handled by enterReadOnlyMode anyway)
+    $langPicker.style.display = '';
+    $adminCloseBtn.style.display = '';
+
+    // Close wall via RPC
+    var res = await sb.rpc('close_wall', { p_wall_id: wallId, p_secret: adminSecret });
+    if (res.error) console.error('Close wall error:', res.error);
+
+    // Enter read-only locally (realtime may also trigger this)
+    enterReadOnlyMode();
+  }
+
+  // =============================================
+  // WALL RENDERING
+  // =============================================
+  function createPostitElement(data, animate) {
+    var el = document.createElement('div');
+    el.className = 'postit' + (animate ? ' fly-in' : '');
+    el.dataset.id = data.id;
+    el.style.left = (data.x * 100) + '%';
+    el.style.top = (data.y * 100) + '%';
+    el.style.backgroundColor = data.color;
+    el.style.transform = 'rotate(' + data.rotation + 'deg)';
+    el.style.setProperty('--rot', data.rotation + 'deg');
+    el.textContent = data.phrase;
+    if (animate) {
+      el.addEventListener('animationend', function () { el.classList.remove('fly-in'); }, { once: true });
+    }
+    return el;
+  }
+
+  function renderWall() {
+    var existing = $wall.querySelectorAll('.postit');
+    for (var i = 0; i < existing.length; i++) existing[i].remove();
+    var frag = document.createDocumentFragment();
+    for (var i = 0; i < state.postits.length; i++) frag.appendChild(createPostitElement(state.postits[i], false));
+    $wall.appendChild(frag);
+    updateCounter();
+  }
+
+  function updateCounter() { $counter.textContent = t('counter').replace('{n}', state.postits.length); }
+
+  function findPostitData(id) {
+    for (var i = 0; i < state.postits.length; i++) {
+      if (String(state.postits[i].id) === String(id)) return state.postits[i];
+    }
+    return null;
+  }
+
+  // --- SCREENS ---
+  function showScreen(name) {
+    state.screen = name;
+    clearInactivityTimer();
+    $reveal.classList.toggle('hidden', name !== 'reveal');
+    if (name === 'wall') {
+      if (wallActive && !state._placingNew) $wallUI.classList.remove('hidden');
+      updateCounter();
+    } else {
+      $wallUI.classList.add('hidden');
+    }
+    if (name === 'reveal') startInactivityTimer();
+  }
+
+  function startInactivityTimer() {
+    clearInactivityTimer();
+    state.inactivityTimer = setTimeout(function () {
+      if (state.screen === 'reveal') showScreen('wall');
+    }, INACTIVITY_MS);
+  }
+  function clearInactivityTimer() {
+    if (state.inactivityTimer) { clearTimeout(state.inactivityTimer); state.inactivityTimer = null; }
+  }
+  function resetInactivity() {
+    if (state.screen === 'reveal') startInactivityTimer();
+  }
+
+  // --- SUBMIT ---
+  function submit() {
+    if (!wallActive) return;
+    var q = $questionInput.value && $questionInput.value.trim() ? $questionInput.value.trim() : null;
+    state.currentQuestion = q;
+    state.currentPhrase = selectPhrase();
+    state.currentColor = randomColor();
+
+    if (q) {
+      $revealQuestion.textContent = '\u201C' + q + '\u201D';
+      $revealQuestion.style.display = '';
+    } else {
+      $revealQuestion.textContent = '';
+      $revealQuestion.style.display = 'none';
+    }
+    $revealPostit.textContent = state.currentPhrase;
+    $revealPostit.style.backgroundColor = state.currentColor;
+    $revealPostit.classList.remove('pop');
+    void $revealPostit.offsetWidth;
+    $revealPostit.classList.add('pop');
+
+    $questionInput.value = '';
+    $questionInput.blur();
+    showScreen('reveal');
+  }
+
+  // --- DRAG SYSTEM ---
+  var drag = { active:false, el:null, id:null, isNew:false, offsetX:0, offsetY:0, moved:false };
+
+  function startDrag(el, cx, cy, isNew) {
+    if (!wallActive) return;
+    drag.active=true; drag.el=el; drag.id=el.dataset.id||null;
+    drag.isNew=isNew; drag.moved=false;
+    var r=el.getBoundingClientRect();
+    drag.offsetX=cx-r.left; drag.offsetY=cy-r.top;
+    el.style.left=r.left+'px'; el.style.top=r.top+'px';
+    el.classList.add('dragging');
+    if (!isNew) draggingId = el.dataset.id;
+    dragThrottle.lastTime = 0;
+    dragThrottle.pending = null;
+  }
+
+  function moveDrag(cx, cy) {
+    if (!drag.active||!drag.el) return;
+    drag.moved=true;
+    var s=postitSize();
+    var nx=Math.max(0,Math.min(wallW()-s,cx-drag.offsetX));
+    var ny=Math.max(0,Math.min(wallH()-s,cy-drag.offsetY));
+    drag.el.style.left=nx+'px'; drag.el.style.top=ny+'px';
+
+    // Throttled Supabase update for existing post-its
+    if (!drag.isNew && drag.id) {
+      var fx=Math.max(0,Math.min(0.95,nx/wallW()));
+      var fy=Math.max(0,Math.min(0.95,ny/wallH()));
+      var now=Date.now();
+      if (now - dragThrottle.lastTime >= 200) {
+        dragThrottle.lastTime = now;
+        dragThrottle.pending = null;
+        sb.from('postits').update({x:fx,y:fy}).eq('id',drag.id).then(function(){});
+      } else {
+        dragThrottle.pending = {id:drag.id, x:fx, y:fy};
+      }
+    }
+  }
+
+  function endDrag() {
+    if (!drag.active||!drag.el) return;
+    var el=drag.el;
+    var px=parseInt(el.style.left,10), py=parseInt(el.style.top,10);
+    var fx=Math.max(0,Math.min(0.95,px/wallW()));
+    var fy=Math.max(0,Math.min(0.95,py/wallH()));
+    el.classList.remove('dragging');
+
+    if (drag.isNew) {
+      var rot=generateRotation();
+      var postitId = el.dataset.id;
+      var d={
+        id: postitId,
+        wall_id: wallId,
+        phrase: state.currentPhrase,
+        question: state.currentQuestion,
+        color: state.currentColor,
+        x: fx, y: fy,
+        rotation: rot,
+        lang: currentLang
+      };
+      el.style.left=(fx*100)+'%'; el.style.top=(fy*100)+'%';
+      el.style.transform='rotate('+rot+'deg)'; el.style.setProperty('--rot',rot+'deg');
+      state.postits.push(d);
+      myPendingIds[postitId] = true;
+      updateCounter();
+
+      // Insert into Supabase
+      sb.from('postits').insert({
+        id: d.id, wall_id: d.wall_id, phrase: d.phrase,
+        question: d.question, color: d.color,
+        x: d.x, y: d.y, rotation: d.rotation, lang: d.lang
+      }).then(function(res) {
+        if (res.error) console.error('Insert error:', res.error);
+      });
+
+      $placementHint.classList.add('hidden');
+      if (wallActive) $wallUI.classList.remove('hidden');
+    } else if (drag.moved) {
+      var pd=findPostitData(drag.id);
+      if (pd) {
+        pd.x=fx; pd.y=fy;
+        el.style.left=(fx*100)+'%'; el.style.top=(fy*100)+'%';
+        el.style.transform='rotate('+pd.rotation+'deg)';
+
+        // Flush final position to Supabase
+        if (dragThrottle.pending) dragThrottle.pending = null;
+        sb.from('postits').update({x:fx,y:fy}).eq('id',drag.id).then(function(res){
+          if (res.error) console.error('Update error:', res.error);
+        });
+      }
+    } else {
+      // No movement — restore original position
+      var ed=findPostitData(drag.id);
+      if (ed) {
+        el.style.left=(ed.x*100)+'%'; el.style.top=(ed.y*100)+'%';
+        el.style.transform='rotate('+ed.rotation+'deg)';
+      }
+    }
+
+    draggingId = null;
+    drag.active=false; drag.el=null; drag.id=null; drag.isNew=false; drag.moved=false;
+  }
+
+  function startPlacement() {
+    showScreen('wall');
+    $wallUI.classList.add('hidden');
+    $placementHint.classList.remove('hidden');
+    var id = crypto.randomUUID();
+    var d={id:id, phrase:state.currentPhrase, question:state.currentQuestion,
+      color:state.currentColor, x:0.45, y:0.45, rotation:0};
+    var el=createPostitElement(d,false);
+    el.classList.add('dragging');
+    $wall.appendChild(el);
+    state._newEl=el; state._placingNew=true;
+  }
+
+  // =============================================
+  // CODE SCREEN
+  // =============================================
+  function showCodeScreen(errorMsg) {
+    $codeScreen.classList.remove('hidden');
+    $wallUI.classList.add('hidden');
+    $codeError.textContent = errorMsg || '';
+    state.screen = 'code';
+  }
+
+  async function onCodeSubmit() {
+    var code = $codeInput.value.trim().toUpperCase();
+    if (!code) return;
+    $codeError.textContent = '';
+    $codeInput.disabled = true;
+
+    var wall = await validateCode(code);
+    $codeInput.disabled = false;
+
+    if (wall) {
+      // Add code to URL for sharing
+      var url = new URL(window.location);
+      url.searchParams.set('code', code);
+      history.replaceState(null, '', url);
+      await enterWall(wall);
+    } else {
+      $codeError.textContent = t('codeError');
+      $codeInput.focus();
+    }
+  }
+
+  // --- LISTENERS ---
+  function setup() {
+    // Lang
+    var lbs=document.querySelectorAll('.lang-btn');
+    for (var i=0;i<lbs.length;i++) lbs[i].addEventListener('click',function(e){e.stopPropagation();setLang(this.dataset.lang);});
+
+    // Submit
+    document.getElementById('submit-btn').addEventListener('click',function(e){e.stopPropagation();submit();});
+    $questionInput.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();submit();}});
+
+    // Code submit
+    document.getElementById('code-submit-btn').addEventListener('click',function(e){e.stopPropagation();onCodeSubmit();});
+    $codeInput.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();onCodeSubmit();}});
+
+    // Reveal
+    document.getElementById('paste-btn').addEventListener('click',function(e){e.stopPropagation();startPlacement();});
+    $reveal.addEventListener('click',function(e){if(e.target===$reveal)showScreen('wall');});
+    $revealWrapper.addEventListener('click',function(e){e.stopPropagation();});
+
+    // Admin close
+    $adminCloseBtn.addEventListener('click',function(e){e.stopPropagation();closeWall();});
+
+    // Touch drag
+    document.addEventListener('touchstart',function(e){
+      if(state.screen!=='wall') return;
+      var touch=e.touches[0];
+      if(state._placingNew&&state._newEl){startDrag(state._newEl,touch.clientX,touch.clientY,true);state._placingNew=false;state._newEl=null;e.preventDefault();return;}
+      var tgt=document.elementFromPoint(touch.clientX,touch.clientY);
+      if(tgt&&tgt.classList.contains('postit')&&!drag.active){startDrag(tgt,touch.clientX,touch.clientY,false);e.preventDefault();}
+    },{passive:false});
+    document.addEventListener('touchmove',function(e){if(drag.active){moveDrag(e.touches[0].clientX,e.touches[0].clientY);e.preventDefault();}},{passive:false});
+    document.addEventListener('touchend',function(e){if(drag.active)endDrag();},{passive:false});
+
+    // Mouse drag
+    document.addEventListener('mousedown',function(e){
+      if(state.screen!=='wall') return;
+      if(state._placingNew&&state._newEl){startDrag(state._newEl,e.clientX,e.clientY,true);state._placingNew=false;state._newEl=null;e.preventDefault();return;}
+      var tgt=document.elementFromPoint(e.clientX,e.clientY);
+      if(tgt&&tgt.classList.contains('postit')&&!drag.active){startDrag(tgt,e.clientX,e.clientY,false);e.preventDefault();}
+    });
+    document.addEventListener('mousemove',function(e){if(drag.active)moveDrag(e.clientX,e.clientY);});
+    document.addEventListener('mouseup',function(e){if(drag.active)endDrag();});
+
+    ['touchstart','touchmove','keydown','input'].forEach(function(evt){
+      document.addEventListener(evt,resetInactivity,{passive:true});
+    });
+  }
+
+  // =============================================
+  // INIT
+  // =============================================
+  var _inited = false;
+  async function init() {
+    if (_inited) return;
+    _inited = true;
+
+    loadLocalPrefs();
+    applyLang();
+    setup();
+
+    // Parse URL params
+    var params = new URLSearchParams(window.location.search);
+    var code = params.get('code');
+    adminSecret = params.get('admin');
+
+    if (code) {
+      var wall = await validateCode(code);
+      if (wall) {
+        await enterWall(wall);
+      } else {
+        showCodeScreen(t('codeError'));
+      }
+    } else {
+      showCodeScreen();
+    }
+
+    $loading.classList.add('hidden');
+  }
+
+  var ft = setTimeout(function() { init(); }, 3000);
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function() { clearTimeout(ft); init(); });
+  }
+
+})();
+</script>
+
+</body>
+</html>
